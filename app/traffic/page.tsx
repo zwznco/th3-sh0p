@@ -26,6 +26,8 @@ export const metadata: Metadata = {
 
 const SERIES = OUTCOMES.map((key) => ({ key, ...OUTCOME_META[key] }));
 const fmt = new Intl.NumberFormat("en-US");
+/** The daily charts show this many complete UTC days; the store keeps every day. */
+const DAILY_WINDOW = 30;
 
 function pct(n: number, total: number) {
   if (!total) return "—";
@@ -170,7 +172,8 @@ function SiteTable({ rows }: { rows: (SiteRow & { name: string })[] }) {
 }
 
 export default async function TrafficPage() {
-  const [latest, daily] = await Promise.all([getLatest(), getDaily()]);
+  const [latest, allDays] = await Promise.all([getLatest(), getDaily()]);
+  const daily = allDays.slice(-DAILY_WINDOW);
 
   if (!latest) {
     return (
@@ -269,7 +272,7 @@ export default async function TrafficPage() {
       {days.length > 0 && (
         <Section
           title="Daily"
-          sub={`One bar per complete UTC day, kept indefinitely. History starts ${daily[0].date}: older raw logs had already rotated away.`}
+          sub={`One bar per complete UTC day, the last ${DAILY_WINDOW}.${allDays.length < DAILY_WINDOW ? ` History starts ${daily[0].date}: older raw logs had already rotated away.` : ""}`}
         >
           <Legend />
           <StackedBars columns={days} series={SERIES} ariaLabel="Requests per day by outcome" />

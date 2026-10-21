@@ -27,7 +27,7 @@ export function StackedBars({
   columns,
   series,
   height = 180,
-  labelEvery = 1,
+  labelEvery,
   ariaLabel,
 }: {
   columns: Column[];
@@ -41,6 +41,9 @@ export function StackedBars({
   const max = niceMax(Math.max(...totals, 0));
   const ticks = [0, max / 4, max / 2, (3 * max) / 4, max];
   const a = active === null ? null : columns[active];
+  // Label steps: about 12 labels wide, about 5 on phones, whatever the column count.
+  const step = labelEvery ?? Math.max(1, Math.ceil(columns.length / 12));
+  const narrow = step * Math.max(1, Math.ceil(columns.length / step / 5));
 
   return (
     <figure className="relative" aria-label={ariaLabel}>
@@ -122,12 +125,23 @@ export function StackedBars({
           )}
         </div>
       </div>
-      <div className="ml-10 mt-2 flex gap-[2px]">
-        {columns.map((c, i) => (
-          <span key={c.title} className="flex-1 whitespace-nowrap text-center font-mono text-[10px] text-ink-400">
-            {i % labelEvery === 0 ? c.label : ""}
-          </span>
-        ))}
+      {/* Labels are positioned out of flow so they never widen the row (one nowrap label per day overflowed
+          phones once history passed a couple of weeks); narrow screens show every `narrow`-th. */}
+      <div className="relative ml-10 mt-2 h-4 font-mono text-[10px] text-ink-400">
+        {columns.map((c, i) => {
+          if (i % step !== 0) return null;
+          const pos = (i + 0.5) / columns.length;
+          const align = pos < 0.1 ? "0" : pos > 0.9 ? "-100%" : "-50%";
+          return (
+            <span
+              key={c.title}
+              className={`absolute top-0 whitespace-nowrap ${i % narrow === 0 ? "" : "hidden sm:inline"}`}
+              style={{ left: `${(pos < 0.1 ? i : pos > 0.9 ? i + 1 : i + 0.5) / columns.length * 100}%`, transform: `translateX(${align})` }}
+            >
+              {c.label}
+            </span>
+          );
+        })}
       </div>
     </figure>
   );
