@@ -12,6 +12,9 @@ RUN npm run build
 
 # Runner: Playwright image ships Chromium + all required system libs.
 FROM mcr.microsoft.com/playwright:v1.49.1-jammy AS runner
+# The playwright image bundles Node 22.12; swap in the patched release (Oct 2026 Node
+# security release, Brotli RCE etc.). Official node binaries need glibc 2.28, jammy has 2.35.
+COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/bin/node
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
